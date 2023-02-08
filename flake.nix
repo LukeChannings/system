@@ -93,10 +93,6 @@
           type = "app";
           program = "${self.packages.${system}.sysdo}/bin/sysdo";
         };
-        cb = {
-          type = "app";
-          program = "${self.packages.${system}.cb}/bin/cb";
-        };
         default = sysdo;
       });
 
