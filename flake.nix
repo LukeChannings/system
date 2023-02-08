@@ -65,14 +65,49 @@
     in
     {
       darwinConfigurations = {
-        "luke@Scimitar" = mkDarwinConfig {
+        "luke@aarch64-darwin" = mkDarwinConfig {
           system = "aarch64-darwin";
           extraModules = [ ./profiles/personal.nix ];
         };
-        "luke@Lukes-Virtual-Machine" = mkDarwinConfig {
-          system = "aarch64-darwin";
-          extraModules = [ ./profiles/personal.nix ];
+      };
+
+      packages = eachSystemMap defaultSystems (system:
+        let
+          pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = builtins.attrValues self.overlays;
+          };
+        in
+        rec {
+          pyEnv =
+            pkgs.python3.withPackages
+              (ps: with ps; [ black typer colorama shellingham ]);
+          sysdo = pkgs.writeScriptBin "sysdo" ''
+            #! ${pyEnv}/bin/python3
+            ${builtins.readFile ./bin/sysdo.py}
+          '';
+        });
+
+      apps = eachSystemMap defaultSystems (system: rec {
+        sysdo = {
+          type = "app";
+          program = "${self.packages.${system}.sysdo}/bin/sysdo";
         };
-      }
-        }
-        }
+        cb = {
+          type = "app";
+          program = "${self.packages.${system}.cb}/bin/cb";
+        };
+        default = sysdo;
+      });
+
+      overlays = {
+        channels = final: prev: {
+          # expose other channels via overlays
+          unstable = import inputs.unstable {system = prev.system;};
+        };
+        extraPackages = final: prev: {
+          sysdo = self.packages.${prev.system}.sysdo;
+        };
+      };
+    };
+}
