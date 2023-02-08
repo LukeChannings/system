@@ -1,5 +1,5 @@
-{...}: {
+{ ... }: {
   imports = [
     ./preferences.nix
-  ]
+  ];
 }
